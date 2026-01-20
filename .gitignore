@@ -1,0 +1,14 @@
+# Ignore Vivado/Xsim simulation generated files
+run/sim/
+*.log
+*.jou
+*.pb
+*.wdb
+xsim.dir/
+.Xil/
+*.str
+
+# Ignore temporary editor files
+*~
+*.swp
+*.bak

@@ -6,7 +6,8 @@ class scoreboard extends uvm_component;
   // Analysis export to connect from monitor
   uvm_analysis_imp #(seq_item, scoreboard) analysis_export;
 
-  // TODO: Add reference model / predictor / expected queues
+  // Expected value defined in our Dummy Slave
+  const bit [31:0] EXPECTED_VAL = 32'hCAFEBABE;
 
   function new(string name, uvm_component parent);
     super.new(name, parent);
@@ -20,7 +21,19 @@ class scoreboard extends uvm_component;
   // write() gets called by the monitor via analysis_port
   virtual function void write(seq_item t);
     // TODO: Compare t against expected model; track pass/fail
-    `uvm_info(get_type_name(), $sformatf("Observed: %s", t.convert2string()), UVM_LOW)
+    
+    if (t.is_write) begin
+      // For writes, just confirm we saw it
+      `uvm_info("SCB", $sformatf("PASS: Observed WRITE -> Addr: 0x%h, Data: 0x%h", t.addr, t.wdata), UVM_LOW)
+    end 
+    else begin
+      // For reads, verify the data matches the dummy slave
+      if (t.rdata == EXPECTED_VAL) begin
+        `uvm_info("SCB", $sformatf("PASS: Observed READ  -> Addr: 0x%h, Data: 0x%h (MATCH)", t.addr, t.rdata), UVM_LOW)
+      end else begin
+        `uvm_error("SCB", $sformatf("FAIL: Data Mismatch! Expected: 0x%h, Got: 0x%h", EXPECTED_VAL, t.rdata))
+      end
+    end
+
   endfunction
 endclass : scoreboard
-

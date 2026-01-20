@@ -6,13 +6,13 @@ class my_driver extends uvm_driver #(seq_item);
 
   function new(string name, uvm_component parent);
     super.new(name, parent);
-  endfunction;
+  endfunction
 
   virtual function void build_phase(uvm_phase phase);
     super.build_phase(phase);
     if (!uvm_config_db#(virtual my_if)::get(this, "", "vif", vif))
       `uvm_fatal(get_type_name(), "virtual interface not set for driver")
-  endfunction;
+  endfunction
 
   virtual task run_phase(uvm_phase phase);
     reset_signals(); 
@@ -24,12 +24,11 @@ class my_driver extends uvm_driver #(seq_item);
 
       `uvm_info(get_type_name(), $sformatf("Driver received: %s", req.convert2string()), UVM_MEDIUM)
       
-    @(posedge vif.ACLK);
-      // if (req.is_write) begin
-      //   do_axi_write(req.addr, req.wdata);
-      // end else begin
-      //   do_axi_read(req.addr, req.rdata); 
-      // end
+      if (req.is_write) begin
+        do_axi_write(req.addr, req.wdata);
+      end else begin
+        do_axi_read(req.addr, req.rdata); 
+      end
       
       seq_item_port.item_done();
     end
@@ -41,24 +40,34 @@ class my_driver extends uvm_driver #(seq_item);
     vif.S_AXI_AWVALID <= 1'b1;
     vif.S_AXI_AWADDR  <= addr;
     vif.S_AXI_AWPROT  <= 3'b0;
-    wait (vif.S_AXI_AWREADY == 1);
-    @(posedge vif.ACLK);
+    
+
+    do begin
+        @(posedge vif.ACLK);
+    end while (vif.S_AXI_AWREADY !== 1'b1);
     
     vif.S_AXI_AWVALID <= 1'b0;
-    @(posedge vif.ACLK);
+    
     vif.S_AXI_WVALID <= 1'b1;
     vif.S_AXI_WDATA  <= wdata;
     vif.S_AXI_WLAST  <= 1'b1;
     vif.S_AXI_WSTRB  <= 4'b1111;
-    wait (vif.S_AXI_WREADY == 1);
-    @(posedge vif.ACLK);
+    
+
+    do begin
+        @(posedge vif.ACLK);
+    end while (vif.S_AXI_WREADY !== 1'b1);
+
     vif.S_AXI_WVALID <= 1'b0;
     vif.S_AXI_WLAST  <= 1'b0;
 
-    @(posedge vif.ACLK);
     vif.S_AXI_BREADY <= 1'b1;
-    wait (vif.S_AXI_BVALID == 1);
-    @(posedge vif.ACLK);
+    
+ 
+    do begin
+        @(posedge vif.ACLK);
+    end while (vif.S_AXI_BVALID !== 1'b1);
+
     vif.S_AXI_BREADY <= 1'b0;
   endtask : do_axi_write
 
@@ -68,20 +77,27 @@ class my_driver extends uvm_driver #(seq_item);
     vif.S_AXI_ARVALID <= 1'b1;
     vif.S_AXI_ARADDR  <= addr;
     vif.S_AXI_ARPROT  <= 3'b0;
-    wait (vif.S_AXI_ARREADY == 1);
-    @(posedge vif.ACLK);
+    
+
+    do begin
+        @(posedge vif.ACLK);
+    end while (vif.S_AXI_ARREADY !== 1'b1);
+
     vif.S_AXI_ARVALID <= 1'b0;
 
-    @(posedge vif.ACLK);
     vif.S_AXI_RREADY <= 1'b1;
-    wait (vif.S_AXI_RVALID == 1);
+    
+
+    do begin
+        @(posedge vif.ACLK);
+    end while (vif.S_AXI_RVALID !== 1'b1);
+    
     rdata = vif.S_AXI_RDATA; 
     
     if (vif.S_AXI_RLAST !== 1'b1) begin
       `uvm_warning("DRIVER", "RLAST was not high with RVALID")
     end
     
-    @(posedge vif.ACLK);
     vif.S_AXI_RREADY <= 1'b0;
   endtask : do_axi_read
 

@@ -1,23 +1,23 @@
-// top.sv
 `include "uvm_macros.svh"
 import uvm_pkg::*;
+import uvm_tb_pkg::*;
 
 module top;
-    // Parameters for DUT
+    // Parameters
     localparam ADDR_WIDTH = 32;
     localparam DATA_WIDTH = 32;
 
-    // Clock and Reset Signals
+    // Signals
     logic clk;
     logic rst_n;
 
-    // Instantiate the interface
+    // Interface
     my_if #(.ADDR_WIDTH(ADDR_WIDTH), .DATA_WIDTH(DATA_WIDTH)) axi_vif (
         .ACLK(clk),
         .ARESETn(rst_n)
     );
 
-    // DUT Instantiation
+    // DUT
     axi_register_slice_v2_1_22_axi_register_slice #(
         .C_AXI_DATA_WIDTH(DATA_WIDTH), 
         .C_AXI_ADDR_WIDTH(ADDR_WIDTH) 
@@ -64,58 +64,55 @@ module top;
         .m_axi_rready(axi_vif.M_AXI_RREADY)
     );
 
+    // Dummy Slave Logic
     always_comb begin
       axi_vif.M_AXI_AWREADY = 1'b1;
       axi_vif.M_AXI_WREADY  = 1'b1;
       axi_vif.M_AXI_ARREADY = 1'b1;
     end
 
-
     logic bvalid_reg = 0;
     logic rvalid_reg = 0;
 
     always_ff @(posedge axi_vif.ACLK or negedge axi_vif.ARESETn) begin
-      if (!axi_vif.ARESETn)
-        bvalid_reg <= 1'b0;
-      else if (bvalid_reg && axi_vif.M_AXI_BREADY) 
-        bvalid_reg <= 1'b0; 
-      else if (axi_vif.M_AXI_WVALID && axi_vif.M_AXI_WREADY) 
-        bvalid_reg <= 1'b1; 
+      if (!axi_vif.ARESETn) bvalid_reg <= 1'b0;
+      else if (bvalid_reg && axi_vif.M_AXI_BREADY) bvalid_reg <= 1'b0; 
+      else if (axi_vif.M_AXI_WVALID && axi_vif.M_AXI_WREADY) bvalid_reg <= 1'b1; 
     end
     
     always_ff @(posedge axi_vif.ACLK or negedge axi_vif.ARESETn) begin
-      if (!axi_vif.ARESETn)
-        rvalid_reg <= 1'b0;
-      else if (rvalid_reg && axi_vif.M_AXI_RREADY) 
-        rvalid_reg <= 1'b0; 
-      else if (axi_vif.M_AXI_ARVALID && axi_vif.M_AXI_ARREADY) 
-        rvalid_reg <= 1'b1; 
+      if (!axi_vif.ARESETn) rvalid_reg <= 1'b0;
+      else if (rvalid_reg && axi_vif.M_AXI_RREADY) rvalid_reg <= 1'b0; 
+      else if (axi_vif.M_AXI_ARVALID && axi_vif.M_AXI_ARREADY) rvalid_reg <= 1'b1; 
     end
-
 
     assign axi_vif.M_AXI_BVALID = bvalid_reg;
     assign axi_vif.M_AXI_BRESP  = 2'b00; 
-    
     assign axi_vif.M_AXI_RVALID = rvalid_reg;
     assign axi_vif.M_AXI_RDATA  = 32'hCAFEBABE; 
     assign axi_vif.M_AXI_RRESP  = 2'b00; 
     assign axi_vif.M_AXI_RLAST  = rvalid_reg; 
-    
+
+    // Clock
     initial begin
         clk = 0;
         forever #5ns clk = ~clk;
     end
 
-
+    //Start UVM 
     initial begin
-        
-        uvm_config_db#(virtual my_if)::set(null, "uvm_test_top", "vif", axi_vif);
-        
+        // Pass the interface to everyone ("*")
+        uvm_config_db#(virtual my_if)::set(null, "*", "vif", axi_vif);
+        run_test(); 
+    end
+
+    //Reset Logic (Running in parallel)
+    initial begin
         rst_n = 1'b0;
         #20ns;
         rst_n = 1'b1;
-        
-        run_test("base_test");
     end
+
+
 
 endmodule
