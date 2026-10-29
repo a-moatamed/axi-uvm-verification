@@ -26,6 +26,7 @@ Designed for high-reliability ASIC and FPGA verification flows, the environment 
 10. [Waveform Analysis & Debugging](#waveform-analysis--debugging)
 11. [Extending the Testbench](#extending-the-testbench)
 12. [References](#references)
+13. [Team & Contributors](#team--contributors)
 
 ---
 
@@ -454,4 +455,10 @@ assert_awvalid_stable: assert property (p_awvalid_stable);
 5. **Xilinx LogiCORE IP AXI Register Slice Product Guide (PG059)** — AMD / Xilinx Inc.
 
 ---
-*Maintained as part of an embedded systems and ASIC/FPGA functional verification engineering portfolio.*
+
+### Team & Contributors
+#### This verification IP and testbench environment was collaboratively developed by Team Dydy:
+
+1. Mahazoasy Narindra
+2. Waleed Hussain
+3. Abomosa Abdelrahman
